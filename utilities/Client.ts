@@ -9,7 +9,7 @@ import Mongo from "./Mongo";
 import { readdirSync } from "node:fs";
 import type { Command } from "../types/Command";
 
-export enum ClientFeatureFlags {
+export enum ClientFeatureFlagBits {
 	SENTRY = 1 << 0,
 	REDIS = 1 << 1,
 	MONGO = 1 << 2,
@@ -40,9 +40,9 @@ export class Client extends DiscordClient {
 	}
 
 	private async init(flags: number) {
-		if (flags & ClientFeatureFlags.SENTRY) this.initSentry();
-		if (flags & ClientFeatureFlags.REDIS) await this.initRedis();
-		if (flags & ClientFeatureFlags.MONGO) await this.initMongo();
+		if (flags & ClientFeatureFlagBits.SENTRY) this.initSentry();
+		if (flags & ClientFeatureFlagBits.REDIS) await this.initRedis();
+		if (flags & ClientFeatureFlagBits.MONGO) await this.initMongo();
 
 		await this.registerEvents();
 		await this.loadCommands();
@@ -108,10 +108,10 @@ export class Client extends DiscordClient {
 		const modules = readdirSync("./modules").filter(file => file.endsWith(".js") || file.endsWith(".ts"));
 
 		modules.forEach(async file => {
-			const { default: module } = await import(`../modules/${file}`);
-			if (!module || typeof module != "function") return console.error(`[MODULES] Module '${file}' is malformed`);
+			const { default: moduleEntryPoint } = await import(`../modules/${file}`);
+			if (!moduleEntryPoint || typeof moduleEntryPoint != "function") return console.error(`[MODULES] Module '${file}' is malformed`);
 
-			module(this).catch(this.handleError);
+			moduleEntryPoint(this).catch(this.handleError);
 			console.log(`[MODULES] Loaded module: ${file.split(".")[0]}`);
 		});
 	}

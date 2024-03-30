@@ -1,8 +1,8 @@
 import { GatewayIntentBits } from "discord.js";
-import { Client, ClientFeatureFlags } from "./utilities/Client";
+import { Client, ClientFeatureFlagBits } from "./utilities/Client";
 
 const client = new Client({
-	features: ClientFeatureFlags.SENTRY | ClientFeatureFlags.REDIS | ClientFeatureFlags.MONGO,
+	features: ClientFeatureFlagBits.SENTRY | ClientFeatureFlagBits.REDIS | ClientFeatureFlagBits.MONGO,
 	intents: [
 		GatewayIntentBits.Guilds,
 	],
