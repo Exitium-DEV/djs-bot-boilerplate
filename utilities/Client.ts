@@ -1,0 +1,154 @@
+import {
+	Client as DiscordClient,
+	type ClientOptions, Collection,
+} from "discord.js";
+
+import * as Sentry from "@sentry/node";
+import { RedisClient } from "./Redis";
+import { readdirSync } from "node:fs";
+import type { Command } from "../types/Command";
+
+export enum ClientFeatureFlags {
+	SENTRY = 1 << 0,
+	REDIS = 1 << 1,
+}
+
+interface Options extends ClientOptions {
+	features: number;
+}
+
+export class Client extends DiscordClient {
+	commandData: Collection<string, Command>;
+	ready: Promise<boolean>;
+	sentry?: typeof Sentry;
+	redis?: typeof RedisClient;
+
+	constructor(options: Options) {
+		super(options);
+
+		this.commandData = new Collection();
+		this.ready = new Promise(resolve => this.once("ready", () => resolve(true)));
+
+		this.init(options.features);
+	}
+
+	handleError(error: any) {
+		const errorId = Sentry.captureException(error);
+		console.error(error);
+		return errorId;
+	}
+
+	private async init(flags: number) {
+		if (flags & ClientFeatureFlags.SENTRY) this.initSentry();
+		if (flags & ClientFeatureFlags.REDIS) await this.initRedis();
+
+		await this.registerEvents();
+		await this.loadCommands();
+
+		await this.ready;
+		await this.loadModules();
+		if (this.commandData.size) this.registerCommands();
+	}
+
+	private initSentry() {
+		Sentry.init({
+			dsn: process.env.SENTRY_DSN,
+			environment: process.env.NODE_ENV,
+			tracesSampleRate: 1.0,
+		});
+
+		this.sentry = Sentry;
+	}
+
+	private async initRedis() {
+		RedisClient.on("error", this.handleError);
+		RedisClient.on("ready", () => console.log("[REDIS] Connected to Redis"));
+
+		await RedisClient.connect();
+
+		this.redis = RedisClient;
+	}
+
+	private async loadCommands() {
+		const commandFiles = readdirSync("./commands").filter(file => file.endsWith(".js") || file.endsWith(".ts"));
+	
+		commandFiles.forEach(async file => {
+			const { default: command } = await import(`../commands/${file}`);
+			if (!command || !command.data || !command.execute) return console.error(`[COMMANDS] Command '${file}' is malformed`);
+
+			const { data } = command;
+			const commandName = file.split(".")[0];
+			
+			try {
+				data.setName(commandName);
+			}
+
+			catch {
+				console.error(`[COMMANDS] Command '${file}' has an invalid name`);
+				return;
+			}
+			
+			this.commandData.set(data.name, command);
+
+			console.log(`[COMMANDS] Loaded handler: ${data.name}`);
+		});
+	}
+
+	private async loadModules() {
+		const modules = readdirSync("./modules").filter(file => file.endsWith(".js") || file.endsWith(".ts"));
+
+		modules.forEach(async file => {
+			const { default: module } = await import(`../modules/${file}`);
+			if (!module || typeof module != "function") return console.error(`[MODULES] Module '${file}' is malformed`);
+
+			module(this).catch(this.handleError);
+			console.log(`[MODULES] Loaded module: ${file.split(".")[0]}`);
+		});
+	}
+
+	private async registerCommands() {
+		const promises = this.guilds.cache.map(async guild => {
+			const commands = this.commandData.map(command => command.data);
+			
+			return guild.commands.set(commands)
+				.then(() => {
+					this.sentry?.addBreadcrumb({
+					category: "register_commands",
+					data: {
+						guild: guild.toJSON(),
+						commands: JSON.parse(
+							JSON.stringify(commands.map(command => command.toJSON()))
+						),
+					},
+					type: "info"
+				})
+
+				return true;
+			})
+			.catch(this.handleError);
+		});
+
+		const results = await Promise.all(promises);
+		const success = results.filter(result => result === true).length;
+		console.log(`[COMMANDS] Registered commands in ${success} guild(s)`);
+	}
+
+	private async registerEvents() {
+		const eventFiles = readdirSync("./events").filter(file => file.endsWith(".js") || file.endsWith(".ts"));
+		
+		for (const file of eventFiles) {
+			const { default: event } = await import(`../events/${file}`);
+			if (!event || !event.execute) {
+				console.error(`[EVENTS] Event '${file}' is malformed`);
+				continue;
+			};
+
+			const eventName = file.split(".")[0];
+
+			if (event.once) this.once(eventName, (...args) => event.execute(...args));
+			else this.on(eventName, (...args) => event.execute(...args));
+
+			console.log(`[EVENTS] Registered event: ${eventName}`);
+		}
+	}
+}

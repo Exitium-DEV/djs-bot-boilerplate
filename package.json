@@ -1,0 +1,16 @@
+{
+  "name": "bot-boilerplate",
+  "module": "bot.ts",
+  "type": "module",
+  "devDependencies": {
+    "@types/bun": "latest"
+  },
+  "peerDependencies": {
+    "typescript": "^5.0.0"
+  },
+  "dependencies": {
+    "@sentry/bun": "^7.109.0",
+    "discord.js": "^14.14.1",
+    "redis": "^4.6.13"
+  }
+}
