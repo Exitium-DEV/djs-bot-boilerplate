@@ -21,7 +21,6 @@ interface Options extends ClientOptions {
 
 export class Client extends DiscordClient {
 	commandData: Collection<string, Command>;
-	ready: Promise<boolean>;
 	sentry?: typeof Sentry;
 	redis?: ReturnType<typeof Redis>;
 	mongo?: ReturnType<typeof Mongo>;
@@ -30,7 +29,6 @@ export class Client extends DiscordClient {
 		super(options);
 
 		this.commandData = new Collection();
-		this.ready = new Promise(resolve => this.once("ready", () => resolve(true)));
 
 		this.init(options.features).catch(this.handleError);
 	}
@@ -49,9 +47,10 @@ export class Client extends DiscordClient {
 		await this.registerEvents();
 		await this.loadCommands();
 
-		await this.ready;
+		await new Promise(resolve => this.once("ready", resolve));
+
 		await this.loadModules();
-		if (this.commandData.size) this.registerCommands();
+		await this.deployCommands();
 	}
 
 	private initSentry() {
@@ -117,31 +116,26 @@ export class Client extends DiscordClient {
 		});
 	}
 
-	private async registerCommands() {
-		const promises = this.guilds.cache.map(async guild => {
-			const commands = this.commandData.map(command => command.data);
-			
-			return guild.commands.set(commands)
-				.then(() => {
-					this.sentry?.addBreadcrumb({
-					category: "register_commands",
-					data: {
-						guild: guild.toJSON(),
-						commands: JSON.parse(
-							JSON.stringify(commands.map(command => command.toJSON()))
-						),
-					},
-					type: "info"
-				})
+	private async deployCommands() {
+		const commands = this.commandData.map(command => command.data);
 
-				return true;
-			})
+		const commandsCacheFile = Bun.file("./commands/.cache");
+		if (!await commandsCacheFile.exists()) await Bun.write(commandsCacheFile, "");
+
+		const commandsHashOld = await commandsCacheFile.text();
+		const commandsHashNew = Bun.hash(JSON.stringify(commands)).toString();
+
+		if (commandsHashOld == commandsHashNew) return console.log("[COMMANDS] No changes detected, skipped deployment");
+
+		await Bun.write(commandsCacheFile, commandsHashNew);
+
+		if (!commands.length) return this.application?.commands.set([])
+			.then(() => console.log("[COMMANDS] No commands found, cleared deployment"))
 			.catch(this.handleError);
-		});
 
-		const results = await Promise.all(promises);
-		const success = results.filter(result => result === true).length;
-		console.log(`[COMMANDS] Registered commands in ${success} guild(s)`);
+		this.application?.commands.set(commands)
+			.then(() => console.log(`[COMMANDS] Successfully deployed ${commands.length} commands`))
+			.catch(this.handleError);
 	}
 
 	private async registerEvents() {
