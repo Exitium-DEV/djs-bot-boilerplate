@@ -4,13 +4,15 @@ import {
 } from "discord.js";
 
 import * as Sentry from "@sentry/node";
-import { RedisClient } from "./Redis";
+import Redis from "./Redis";
+import Mongo from "./Mongo";
 import { readdirSync } from "node:fs";
 import type { Command } from "../types/Command";
 
 export enum ClientFeatureFlags {
 	SENTRY = 1 << 0,
 	REDIS = 1 << 1,
+	MONGO = 1 << 2,
 }
 
 interface Options extends ClientOptions {
@@ -21,7 +23,8 @@ export class Client extends DiscordClient {
 	commandData: Collection<string, Command>;
 	ready: Promise<boolean>;
 	sentry?: typeof Sentry;
-	redis?: typeof RedisClient;
+	redis?: ReturnType<typeof Redis>;
+	mongo?: ReturnType<typeof Mongo>;
 
 	constructor(options: Options) {
 		super(options);
@@ -29,11 +32,11 @@ export class Client extends DiscordClient {
 		this.commandData = new Collection();
 		this.ready = new Promise(resolve => this.once("ready", () => resolve(true)));
 
-		this.init(options.features);
+		this.init(options.features).catch(this.handleError);
 	}
 
-	handleError(error: any) {
-		const errorId = Sentry.captureException(error);
+	public handleError = (error: any) => {
+		const errorId = this.sentry?.captureException(error);
 		console.error(error);
 		return errorId;
 	}
@@ -41,6 +44,7 @@ export class Client extends DiscordClient {
 	private async init(flags: number) {
 		if (flags & ClientFeatureFlags.SENTRY) this.initSentry();
 		if (flags & ClientFeatureFlags.REDIS) await this.initRedis();
+		if (flags & ClientFeatureFlags.MONGO) await this.initMongo();
 
 		await this.registerEvents();
 		await this.loadCommands();
@@ -61,12 +65,19 @@ export class Client extends DiscordClient {
 	}
 
 	private async initRedis() {
+		const RedisClient = Redis();
+
 		RedisClient.on("error", this.handleError);
 		RedisClient.on("ready", () => console.log("[REDIS] Connected to Redis"));
 
 		await RedisClient.connect();
 
 		this.redis = RedisClient;
+	}
+
+	private async initMongo() {
+		this.mongo = Mongo();
+		console.log("[MONGO] Connected to MongoDB");
 	}
 
 	private async loadCommands() {

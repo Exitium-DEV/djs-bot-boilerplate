@@ -1,4 +1,4 @@
-import { Client } from "../utilities/Client"
+import { Client } from "../utilities/Client";
 
 export default {
 	once: true,															// OPTIONAL, defaults to false
