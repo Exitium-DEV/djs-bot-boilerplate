@@ -1,8 +1,12 @@
-import { PermissionFlagsBits, type ChatInputCommandInteraction } from "discord.js";
-import { SlashCommandBuilder } from "discord.js";
+import {
+	PermissionFlagsBits,
+	SlashCommandBuilder,
+	type ChatInputCommandInteraction,
+} from "discord.js";
+import type { Command } from "../types/Command";
 
 export default {
-	permission: async (interaction: ChatInputCommandInteraction) => {									// OPTIONAL, defaults to true, allows custom permission checks
+	permission: async (interaction: ChatInputCommandInteraction) => {							// OPTIONAL, defaults to true, allows custom permission checks
 		// do something then return whether the member has permission to run the command
 		return true;
 	},												
@@ -14,4 +18,4 @@ export default {
 	execute: async (interaction: ChatInputCommandInteraction) => {								// REQUIRED, what should the command do?
 		await interaction.reply("Pong!");
 	},
-};
+} as Command;

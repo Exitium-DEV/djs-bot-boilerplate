@@ -117,24 +117,24 @@ export class Client extends DiscordClient {
 	}
 
 	private async deployCommands() {
-		const commands = this.commandData.map(command => command.data);
+		const commandsData = this.commandData.map(command => command.data);
 
 		const commandsCacheFile = Bun.file("./commands/.cache");
 		if (!await commandsCacheFile.exists()) await Bun.write(commandsCacheFile, "");
 
 		const commandsHashOld = await commandsCacheFile.text();
-		const commandsHashNew = Bun.hash(JSON.stringify(commands)).toString();
+		const commandsHashNew = Bun.hash(JSON.stringify(commandsData)).toString();
 
-		if (commandsHashOld == commandsHashNew) return console.log("[COMMANDS] No changes detected, skipped deployment");
+		if (commandsHashOld == commandsHashNew) return console.log("[COMMANDS] No structure changes, skipped deployment");
 
 		await Bun.write(commandsCacheFile, commandsHashNew);
 
-		if (!commands.length) return this.application?.commands.set([])
+		if (!commandsData.length) return this.application?.commands.set([])
 			.then(() => console.log("[COMMANDS] No commands found, cleared deployment"))
 			.catch(this.handleError);
 
-		this.application?.commands.set(commands)
-			.then(() => console.log(`[COMMANDS] Successfully deployed ${commands.length} commands`))
+		this.application?.commands.set(commandsData)
+			.then(() => console.log(`[COMMANDS] Successfully deployed ${commandsData.length} commands`))
 			.catch(this.handleError);
 	}
 
