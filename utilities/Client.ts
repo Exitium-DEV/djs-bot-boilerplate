@@ -47,7 +47,7 @@ export class Client extends DiscordClient {
 		await this.registerEvents();
 		await this.loadCommands();
 
-		await new Promise(resolve => this.once("ready", resolve));
+		if(!this.isReady()) await new Promise(resolve => this.once("ready", resolve));
 
 		await this.loadModules();
 		await this.deployCommands();

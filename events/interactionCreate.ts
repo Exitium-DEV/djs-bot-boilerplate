@@ -2,7 +2,6 @@ import { EmbedBuilder, type Interaction } from "discord.js";
 import { Client } from "../utilities/Client";
 
 export default {
-	once: false,
 	execute(interaction: Interaction) {
 		if (interaction.isChatInputCommand()) {
 			const client = interaction.client as Client;
