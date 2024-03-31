@@ -1,6 +1,6 @@
 import {
 	Client as DiscordClient,
-	type ClientOptions, Collection, SlashCommandBuilder, ButtonBuilder,
+	type ClientOptions, Collection, SlashCommandBuilder, type APIButtonComponentWithCustomId, type APIButtonComponentWithURL,
 } from "discord.js";
 
 import * as Sentry from "@sentry/node";
@@ -99,11 +99,11 @@ export class Client extends DiscordClient {
 			const { default: command } = await import(`../commands/${file}`);
 			if (!command || !command.data || !command.execute) return console.error(`[COMMANDS] Command '${file}' is malformed`);
 
-			const { data }: { data: SlashCommandBuilder } = command;
-			const commandName = file.split(".")[0].toLowerCase();
+			const { data: commandBuilder }: { data: SlashCommandBuilder } = command;
+			const commandName = commandBuilder.name ?? file.split(".")[0].toLowerCase();
 			
 			try {
-				data.setName(commandName);
+				commandBuilder.setName(commandName);
 			}
 
 			catch {
@@ -121,14 +121,14 @@ export class Client extends DiscordClient {
 		const buttonFiles = readdirSync("./components/buttons").filter(file => file.endsWith(".js") || file.endsWith(".ts"));
 
 		buttonFiles.forEach(async file => {
-			const { default: button } = await import(`../components/buttons/${file}`);
+			const { default: button }: { default: Button } = await import(`../components/buttons/${file}`);
 			if (!button || !button.data || !button.execute) return console.error(`[BUTTONS] Button '${file}' is malformed`);
 
-			const { data }: { data: ButtonBuilder } = button;
-			const buttonName = file.split(".")[0].toLowerCase();
+			const { data: buttonData } = button;
+			const buttonName = (buttonData.data as Partial<APIButtonComponentWithCustomId> & Partial<APIButtonComponentWithURL>)?.custom_id ?? file.split(".")[0].toLowerCase();
 
 			try {
-				data.setCustomId(buttonName);
+				buttonData.setCustomId(buttonName);
 			}
 
 			catch {
@@ -146,14 +146,14 @@ export class Client extends DiscordClient {
 		const selectMenuFiles = readdirSync("./components/selectMenus").filter(file => file.endsWith(".js") || file.endsWith(".ts"));
 
 		selectMenuFiles.forEach(async file => {
-			const { default: selectMenu } = await import(`../components/selectMenus/${file}`);
+			const { default: selectMenu }: { default: SelectMenu } = await import(`../components/selectMenus/${file}`);
 			if (!selectMenu || !selectMenu.data || !selectMenu.execute) return console.error(`[SELECTMENUS] Select menu '${file}' is malformed`);
 
-			const { data }: { data: AnySelectMenuBuilder } = selectMenu;
-			const selectMenuName = file.split(".")[0].toLowerCase();
+			const { data: selectMenuBuilderData } = selectMenu;
+			const selectMenuName = selectMenuBuilderData.data.custom_id ?? file.split(".")[0].toLowerCase();
 
 			try {
-				data.setCustomId(selectMenuName);
+				selectMenuBuilderData.setCustomId(selectMenuName);
 			}
 
 			catch {
