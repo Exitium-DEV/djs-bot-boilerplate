@@ -132,7 +132,7 @@ export class Client extends DiscordClient {
 			}
 
 			catch {
-				console.error(`[COMPONENTS] Button '${file}' has an invalid custom ID`);
+				console.error(`[COMPONENTS] Button '${file}' has an invalid name`);
 				return;
 			}
 
@@ -157,7 +157,7 @@ export class Client extends DiscordClient {
 			}
 
 			catch {
-				console.error(`[COMPONENTS] Select menu '${file}' has an invalid custom ID`);
+				console.error(`[COMPONENTS] Select menu '${file}' has an invalid name`);
 				return;
 			}
 
