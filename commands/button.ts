@@ -12,8 +12,7 @@ export default {
 		.setDescription("Sends a button!"),
 	
 	execute: async (interaction) => {															// REQUIRED, what should the command do?
-		const client = interaction.client as Client;
-		const button = client.components.buttons.get("example");								// OPTIONAL, get the button object from the client (defined in components/buttons/example.ts)
+		const button = interaction.client.components.buttons.get("example");					// OPTIONAL, get the button object from the client (defined in components/buttons/example.ts)
 
 		if (!button) {
 			return interaction.reply({

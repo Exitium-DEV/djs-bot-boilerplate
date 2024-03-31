@@ -12,8 +12,7 @@ export default {
 		.setDescription("Sends a select menu!"),
 	
 	execute: async (interaction) => {															// REQUIRED, what should the command do?
-		const client = interaction.client as Client;
-		const selectMenu = client.components.selectMenus.get("example");						// OPTIONAL, get the select menu object from the client (defined in components/selectMenus/example.ts)
+		const selectMenu = interaction.client.components.selectMenus.get("example");			// OPTIONAL, get the select menu object from the client (defined in components/selectMenus/example.ts)
 
 		if (!selectMenu) {
 			return interaction.reply({

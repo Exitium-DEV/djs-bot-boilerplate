@@ -1,10 +1,9 @@
 import { AnySelectMenuInteraction, ButtonInteraction, ChatInputCommandInteraction, EmbedBuilder, type Interaction } from "discord.js";
-import { Client } from "../../utilities/Client";
 import { type Event } from "../../types/Event";
+import type { InteractionClientOverride } from "../../types/InteractionClientOverride";
 
-function handleChatInputCommand(interaction: ChatInputCommandInteraction) {
-	const client = interaction.client as Client;
-	const { commandName } = interaction;
+function handleChatInputCommand(interaction: InteractionClientOverride<ChatInputCommandInteraction>) {
+	const { commandName, client } = interaction;
 
 	const command = client.commands.get(commandName);
 	if (!command) return;
@@ -36,9 +35,8 @@ function handleChatInputCommand(interaction: ChatInputCommandInteraction) {
 		});
 }
 
-function handleButton(interaction: ButtonInteraction) {
-	const client = interaction.client as Client;
-	const { customId } = interaction;
+function handleButton(interaction: InteractionClientOverride<ButtonInteraction>) {
+	const { customId, client } = interaction;
 
 	const button = client.components.buttons.get(customId);
 	if (!button) return;
@@ -67,9 +65,8 @@ function handleButton(interaction: ButtonInteraction) {
 		});
 }
 
-function handleAnySelectMenu(interaction: AnySelectMenuInteraction) {
-	const client = interaction.client as Client;
-	const { customId } = interaction;
+function handleAnySelectMenu(interaction: InteractionClientOverride<AnySelectMenuInteraction>) {
+	const { customId, client } = interaction;
 
 	const selectMenu = client.components.selectMenus.get(customId);
 	if (!selectMenu) return;
@@ -99,7 +96,7 @@ function handleAnySelectMenu(interaction: AnySelectMenuInteraction) {
 }
 
 export default {
-	execute(interaction: Interaction) {
+	execute(interaction: InteractionClientOverride<Interaction>) {
 		if (interaction.isChatInputCommand()) return handleChatInputCommand(interaction);
 		if (interaction.isButton()) return handleButton(interaction);
 		if (interaction.isAnySelectMenu()) return handleAnySelectMenu(interaction);
