@@ -1,4 +1,4 @@
-import { AnySelectMenuInteraction, ButtonInteraction, ChatInputCommandInteraction, ContextMenuCommandInteraction, EmbedBuilder, type Interaction } from "discord.js";
+import { AnySelectMenuInteraction, ButtonInteraction, ChatInputCommandInteraction, EmbedBuilder, type Interaction } from "discord.js";
 import { Client } from "../../utilities/Client";
 import { type Event } from "../../types/Event";
 
