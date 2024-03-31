@@ -8,12 +8,12 @@ import type { Command } from "../types/Command";
 import type { Client } from "../utilities/Client";
 
 export default {
-	data: new SlashCommandBuilder()
+	data: new SlashCommandBuilder()																// REQUIRED, name is inferred from file name
 		.setDescription("Sends a button!"),
 	
-	execute: async (interaction) => {
+	execute: async (interaction) => {															// REQUIRED, what should the command do?
 		const client = interaction.client as Client;
-		const button = client.components.buttons.get("example");
+		const button = client.components.buttons.get("example");								// OPTIONAL, get the button object from the client (defined in components/buttons/example.ts)
 
 		if (!button) {
 			return interaction.reply({
@@ -29,4 +29,4 @@ export default {
 			components: [row],
 		});
 	},
-} satisfies Command;
+} satisfies Command;																			// OPTIONAL, used for type checking, shows errors if the object is not the right format

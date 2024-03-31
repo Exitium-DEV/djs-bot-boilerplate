@@ -8,12 +8,12 @@ import type { Client } from "../utilities/Client";
 import type { AnySelectMenuBuilder } from "../types/SelectMenu";
 
 export default {
-	data: new SlashCommandBuilder()
+	data: new SlashCommandBuilder()																// REQUIRED, name is inferred from file name
 		.setDescription("Sends a select menu!"),
 	
-	execute: async (interaction) => {
+	execute: async (interaction) => {															// REQUIRED, what should the command do?
 		const client = interaction.client as Client;
-		const selectMenu = client.components.selectMenus.get("example");
+		const selectMenu = client.components.selectMenus.get("example");						// OPTIONAL, get the select menu object from the client (defined in components/selectMenus/example.ts)
 
 		if (!selectMenu) {
 			return interaction.reply({
@@ -29,4 +29,4 @@ export default {
 			components: [row],
 		});
 	},
-} satisfies Command;
+} satisfies Command;																			// OPTIONAL, used for type checking, shows errors if the object is not the right format

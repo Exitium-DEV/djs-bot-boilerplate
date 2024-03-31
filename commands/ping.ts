@@ -18,4 +18,4 @@ export default {
 	execute: async (interaction) => {															// REQUIRED, what should the command do?
 		await interaction.reply("Pong!");
 	},
-} satisfies Command;
+} satisfies Command;																			// OPTIONAL, used for type checking, shows errors if the object is not the right format

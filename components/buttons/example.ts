@@ -2,7 +2,7 @@ import { type Button } from "../../types/Button";
 import { ButtonBuilder, ButtonStyle } from "discord.js";
 
 export default {
-	data: new ButtonBuilder()									// REQUIRED, name is inferred from file name
+	data: new ButtonBuilder()									// REQUIRED, customId is inferred from file name
 		.setLabel("Click me!")
 		.setStyle(ButtonStyle.Primary),
 	

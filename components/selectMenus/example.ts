@@ -2,7 +2,7 @@ import { type SelectMenu } from "../../types/SelectMenu";
 import { StringSelectMenuBuilder } from "discord.js";
 
 export default {
-	data: new StringSelectMenuBuilder()								// REQUIRED, name is inferred from file name
+	data: new StringSelectMenuBuilder()								// REQUIRED, customId is inferred from file name
 		.setPlaceholder("Select an option")
 		.addOptions([
 			{
