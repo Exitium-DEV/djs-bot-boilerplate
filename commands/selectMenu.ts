@@ -3,11 +3,11 @@ import {
 	ActionRowBuilder,
 } from "discord.js";
 
-import type { Command } from "../types/Command";
+import type { SlashCommand } from "../types/SlashCommand";
 import type { AnySelectMenuBuilder } from "../types/SelectMenu";
 
 export default {
-	data: new SlashCommandBuilder()																// REQUIRED, name is inferred from file name
+	data: new SlashCommandBuilder()																// REQUIRED, name is inferred from file name, can be overriden with .setName()
 		.setDescription("Sends a select menu!"),
 	
 	execute: async (interaction) => {															// REQUIRED, what should the command do?
@@ -27,4 +27,4 @@ export default {
 			components: [row],
 		});
 	},
-} satisfies Command;																			// OPTIONAL, used for type checking, shows errors if the object is not the right format
+} satisfies SlashCommand;																		// OPTIONAL, used for type checking, shows errors if the object is not the right format

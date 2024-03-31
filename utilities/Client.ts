@@ -1,6 +1,10 @@
 import {
 	Client as DiscordClient,
-	type ClientOptions, Collection, SlashCommandBuilder, type APIButtonComponentWithCustomId, type APIButtonComponentWithURL,
+	type ClientOptions,
+	Collection,
+	SlashCommandBuilder,
+	type APIButtonComponentWithCustomId,
+	type APIButtonComponentWithURL,
 } from "discord.js";
 
 import * as Sentry from "@sentry/node";
@@ -38,6 +42,7 @@ export class Client extends DiscordClient {
 		super(options);
 
 		this.commands = new Collection();
+
 		this.components = {
 			buttons: new Collection(),
 			selectMenus: new Collection(),

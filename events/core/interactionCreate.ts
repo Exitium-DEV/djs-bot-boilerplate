@@ -4,16 +4,20 @@ import {
 	ButtonInteraction,
 	ChatInputCommandInteraction,
 	EmbedBuilder,
-	ModalSubmitInteraction
+	ModalSubmitInteraction,
+	ContextMenuCommandInteraction
 } from "discord.js";
+
+import type { SlashCommand } from "../../types/SlashCommand";
+import type { ContextMenuCommand } from "../../types/ContextMenuCommand";
 
 import { type Event } from "../../types/Event";
 import type { InteractionClientOverride } from "../../types/InteractionClientOverride";
 
-function handleChatInputCommand(interaction: InteractionClientOverride<ChatInputCommandInteraction>) {
+async function handleChatInputCommand(interaction: InteractionClientOverride<ChatInputCommandInteraction>) {
 	const { commandName, client } = interaction;
 
-	const command = client.commands.get(commandName);
+	const command = client.commands.get(commandName) as SlashCommand;
 	if (!command) return;
 
 	client.sentry?.addBreadcrumb({
@@ -25,7 +29,7 @@ function handleChatInputCommand(interaction: InteractionClientOverride<ChatInput
 		type: "info"
 	});
 
-	const permission = command.permission ? command.permission(interaction) : true;
+	const permission = command.permission ? await command.permission(interaction) : true;
 	if (!permission) return interaction.reply({ content: "You do not have permission to execute this command.", ephemeral: true });
 
 	command.execute(interaction)
@@ -133,11 +137,45 @@ function handleModalSubmit(interaction: InteractionClientOverride<ModalSubmitInt
 		});
 }
 
+async function handleContextMenuCommand(interaction: InteractionClientOverride<ContextMenuCommandInteraction>) {
+	const { commandName, client } = interaction;
+
+	const command = client.commands.get(commandName) as ContextMenuCommand;
+	if (!command) return;
+
+	client.sentry?.addBreadcrumb({
+		category: "contextMenuCommand",
+		data: {
+			data: command.data.toJSON(),
+			interaction: interaction.toJSON(),
+		},
+		type: "info"
+	});
+
+	const permission = command.permission ? await command.permission(interaction) : true;
+	if (!permission) return interaction.reply({ content: "You do not have permission to execute this command.", ephemeral: true });
+
+	command.execute(interaction)
+		.catch((error) => {
+			const errorId = client.handleError(error);
+			const errorEmbed = new EmbedBuilder()
+				.setTitle("An error occurred")
+				.setDescription('Something unexpected happened while executing this context menu command.\nIf this issue persists, please report it to the developer.')
+				.setColor(0xFF0000);
+			
+			client.sentry && errorEmbed.setFooter({text: `Error ID: ${errorId}`});
+
+			if (interaction.replied) interaction.followUp({ embeds: [errorEmbed], ephemeral: true });
+			else interaction.reply({ embeds: [errorEmbed], ephemeral: true });
+		});
+}
+
 export default {
 	execute(interaction: InteractionClientOverride<Interaction>) {
 		if (interaction.isChatInputCommand()) return handleChatInputCommand(interaction);
 		if (interaction.isButton()) return handleButton(interaction);
 		if (interaction.isAnySelectMenu()) return handleAnySelectMenu(interaction);
 		if (interaction.isModalSubmit()) return handleModalSubmit(interaction);
+		if (interaction.isContextMenuCommand()) return handleContextMenuCommand(interaction);
 	}
 } satisfies Event;
