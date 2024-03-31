@@ -5,7 +5,6 @@ import {
 } from "discord.js";
 
 import type { Command } from "../types/Command";
-import type { Client } from "../utilities/Client";
 
 export default {
 	data: new SlashCommandBuilder()																// REQUIRED, name is inferred from file name
