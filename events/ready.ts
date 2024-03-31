@@ -6,4 +6,4 @@ export default {
 	execute(client: Client) {											// REQUIRED, what should the event do?
 		console.log(`[READY] Logged in as ${client.user?.tag}`);
 	}
-} as Event;
+} satisfies Event;

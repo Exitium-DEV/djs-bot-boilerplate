@@ -1,4 +1,4 @@
 export interface Event {
 	once?: boolean;
-	execute: (args?: any) => Promise<void> | void;
+	execute: (args?: any) => Promise<any> | any;
 }
