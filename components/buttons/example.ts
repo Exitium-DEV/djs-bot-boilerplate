@@ -1,4 +1,4 @@
-import { type Button } from "../types/Button";
+import { type Button } from "../../types/Button";
 import { ButtonBuilder, ButtonStyle } from "discord.js";
 
 export default {

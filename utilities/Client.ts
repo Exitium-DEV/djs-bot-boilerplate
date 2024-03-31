@@ -9,6 +9,7 @@ import Mongo from "./Mongo";
 import { readdirSync } from "node:fs";
 import type { Command } from "../types/Command";
 import type { Button } from "../types/Button";
+import type { AnySelectMenuBuilder, SelectMenu } from "../types/SelectMenu";
 import { join as pathJoin } from "node:path";
 
 export enum ClientFeatureFlagBits {
@@ -24,6 +25,7 @@ interface Options extends ClientOptions {
 export class Client extends DiscordClient {
 	commands: Collection<string, Command>;
 	buttons: Collection<string, Button>;
+	selectMenus: Collection<string, SelectMenu>;
 	sentry?: typeof Sentry;
 	redis?: ReturnType<typeof Redis>;
 	mongo?: ReturnType<typeof Mongo>;
@@ -33,6 +35,7 @@ export class Client extends DiscordClient {
 
 		this.commands = new Collection();
 		this.buttons = new Collection();
+		this.selectMenus = new Collection();
 
 		this.init(options.features).catch(this.handleError);
 	}
@@ -51,6 +54,7 @@ export class Client extends DiscordClient {
 		await this.registerEvents();
 		await this.loadCommands();
 		await this.loadButtons();
+		await this.loadSelectMenus();
 
 		if(!this.isReady()) await new Promise(resolve => this.once("ready", resolve));
 
@@ -110,10 +114,10 @@ export class Client extends DiscordClient {
 	}
 
 	private async loadButtons() {
-		const buttonFiles = readdirSync("./buttons").filter(file => file.endsWith(".js") || file.endsWith(".ts"));
+		const buttonFiles = readdirSync("./components/buttons").filter(file => file.endsWith(".js") || file.endsWith(".ts"));
 
 		buttonFiles.forEach(async file => {
-			const { default: button } = await import(`../buttons/${file}`);
+			const { default: button } = await import(`../components/buttons/${file}`);
 			if (!button || !button.data || !button.execute) return console.error(`[BUTTONS] Button '${file}' is malformed`);
 
 			const { data }: { data: ButtonBuilder } = button;
@@ -124,13 +128,38 @@ export class Client extends DiscordClient {
 			}
 
 			catch {
-				console.error(`[BUTTONS] Button '${file}' has an invalid custom ID`);
+				console.error(`[COMPONENTS] Button '${file}' has an invalid custom ID`);
 				return;
 			}
 
 			this.buttons.set(buttonName, button);
 
-			console.log(`[BUTTONS] Loaded handler: ${buttonName}`);
+			console.log(`[COMPONENTS] Loaded button handler: ${buttonName}`);
+		})
+	}
+
+	private async loadSelectMenus() {
+		const selectMenuFiles = readdirSync("./components/selectMenus").filter(file => file.endsWith(".js") || file.endsWith(".ts"));
+
+		selectMenuFiles.forEach(async file => {
+			const { default: selectMenu } = await import(`../components/selectMenus/${file}`);
+			if (!selectMenu || !selectMenu.data || !selectMenu.execute) return console.error(`[SELECTMENUS] Select menu '${file}' is malformed`);
+
+			const { data }: { data: AnySelectMenuBuilder } = selectMenu;
+			const selectMenuName = file.split(".")[0];
+
+			try {
+				data.setCustomId(selectMenuName);
+			}
+
+			catch {
+				console.error(`[COMPONENTS] Select menu '${file}' has an invalid custom ID`);
+				return;
+			}
+
+			this.selectMenus.set(selectMenuName, selectMenu);
+
+			console.log(`[COMPONENTS] Loaded select menu handler: ${selectMenuName}`);
 		})
 	}
 
@@ -166,7 +195,7 @@ export class Client extends DiscordClient {
 			.catch(this.handleError);
 
 		this.application?.commands.set(commandsData)
-			.then(() => console.log(`[COMMANDS] Successfully deployed ${commandsData.length} commands`))
+			.then((res) => console.log(`[COMMANDS] Successfully deployed ${res.size} commands`))
 			.catch(this.handleError);
 	}
 
