@@ -100,7 +100,7 @@ export class Client extends DiscordClient {
 			if (!command || !command.data || !command.execute) return console.error(`[COMMANDS] Command '${file}' is malformed`);
 
 			const { data }: { data: SlashCommandBuilder } = command;
-			const commandName = file.split(".")[0];
+			const commandName = file.split(".")[0].toLowerCase();
 			
 			try {
 				data.setName(commandName);
@@ -125,7 +125,7 @@ export class Client extends DiscordClient {
 			if (!button || !button.data || !button.execute) return console.error(`[BUTTONS] Button '${file}' is malformed`);
 
 			const { data }: { data: ButtonBuilder } = button;
-			const buttonName = file.split(".")[0];
+			const buttonName = file.split(".")[0].toLowerCase();
 
 			try {
 				data.setCustomId(buttonName);
@@ -150,7 +150,7 @@ export class Client extends DiscordClient {
 			if (!selectMenu || !selectMenu.data || !selectMenu.execute) return console.error(`[SELECTMENUS] Select menu '${file}' is malformed`);
 
 			const { data }: { data: AnySelectMenuBuilder } = selectMenu;
-			const selectMenuName = file.split(".")[0];
+			const selectMenuName = file.split(".")[0].toLowerCase();
 
 			try {
 				data.setCustomId(selectMenuName);
@@ -172,10 +172,12 @@ export class Client extends DiscordClient {
 
 		modules.forEach(async file => {
 			const { default: moduleEntryPoint } = await import(`../modules/${file}`);
+			const moduleName = file.split(".")[0].toLowerCase();
+
 			if (!moduleEntryPoint || typeof moduleEntryPoint != "function") return console.error(`[MODULES] Module '${file}' is malformed`);
 
 			moduleEntryPoint(this).catch(this.handleError);
-			console.log(`[MODULES] Loaded module: ${file.split(".")[0]}`);
+			console.log(`[MODULES] Loaded module: ${moduleName}`);
 		});
 	}
 
