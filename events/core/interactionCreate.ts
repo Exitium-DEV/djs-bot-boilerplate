@@ -1,4 +1,12 @@
-import { type AnySelectMenuInteraction, ButtonInteraction, ChatInputCommandInteraction, EmbedBuilder, type Interaction } from "discord.js";
+import {
+	type Interaction,
+	type AnySelectMenuInteraction,
+	ButtonInteraction,
+	ChatInputCommandInteraction,
+	EmbedBuilder,
+	ModalSubmitInteraction
+} from "discord.js";
+
 import { type Event } from "../../types/Event";
 import type { InteractionClientOverride } from "../../types/InteractionClientOverride";
 
@@ -95,10 +103,41 @@ function handleAnySelectMenu(interaction: InteractionClientOverride<AnySelectMen
 		});
 }
 
+function handleModalSubmit(interaction: InteractionClientOverride<ModalSubmitInteraction>) {
+	const { customId, client } = interaction;
+
+	const modal = client.components.modals.get(customId);
+	if (!modal) return;
+
+	client.sentry?.addBreadcrumb({
+		category: "modal",
+		data: {
+			data: modal.data.toJSON(),
+			interaction: interaction.toJSON(),
+		},
+		type: "info"
+	});
+
+	modal.execute(interaction)
+		.catch((error) => {
+			const errorId = client.handleError(error);
+			const errorEmbed = new EmbedBuilder()
+				.setTitle("An error occurred")
+				.setDescription('Something unexpected happened while executing this select menu.\nIf this issue persists, please report it to the developer.')
+				.setColor(0xFF0000);
+			
+			client.sentry && errorEmbed.setFooter({text: `Error ID: ${errorId}`});
+
+			if (interaction.replied) interaction.followUp({ embeds: [errorEmbed], ephemeral: true });
+			else interaction.reply({ embeds: [errorEmbed], ephemeral: true });
+		});
+}
+
 export default {
 	execute(interaction: InteractionClientOverride<Interaction>) {
 		if (interaction.isChatInputCommand()) return handleChatInputCommand(interaction);
 		if (interaction.isButton()) return handleButton(interaction);
 		if (interaction.isAnySelectMenu()) return handleAnySelectMenu(interaction);
+		if (interaction.isModalSubmit()) return handleModalSubmit(interaction);
 	}
 } satisfies Event;

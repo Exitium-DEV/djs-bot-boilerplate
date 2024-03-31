@@ -9,7 +9,8 @@ import Mongo from "./Mongo";
 import { readdirSync } from "node:fs";
 import type { Command } from "../types/Command";
 import type { Button } from "../types/Button";
-import type { AnySelectMenuBuilder, SelectMenu } from "../types/SelectMenu";
+import type { SelectMenu } from "../types/SelectMenu";
+import type { Modal } from "../types/Modal";
 import { join as pathJoin } from "node:path";
 
 export enum ClientFeatureFlagBits {
@@ -27,6 +28,7 @@ export class Client extends DiscordClient {
 	components: {
 		buttons: Collection<string, Button>;
 		selectMenus: Collection<string, SelectMenu>;
+		modals: Collection<string, Modal>;
 	};
 	sentry?: typeof Sentry;
 	redis?: ReturnType<typeof Redis>;
@@ -39,6 +41,7 @@ export class Client extends DiscordClient {
 		this.components = {
 			buttons: new Collection(),
 			selectMenus: new Collection(),
+			modals: new Collection(),
 		}
 
 		this.init(options.features).catch(this.handleError);
@@ -59,6 +62,7 @@ export class Client extends DiscordClient {
 		await this.loadCommands();
 		await this.loadButtons();
 		await this.loadSelectMenus();
+		await this.loadModals();
 
 		if(!this.isReady()) await new Promise(resolve => this.once("ready", resolve));
 
@@ -139,7 +143,7 @@ export class Client extends DiscordClient {
 			this.components.buttons.set(buttonName, button);
 
 			console.log(`[COMPONENTS] Loaded button handler: ${buttonName}`);
-		})
+		});
 	}
 
 	private async loadSelectMenus() {
@@ -164,7 +168,32 @@ export class Client extends DiscordClient {
 			this.components.selectMenus.set(selectMenuName, selectMenu);
 
 			console.log(`[COMPONENTS] Loaded select menu handler: ${selectMenuName}`);
-		})
+		});
+	}
+
+	private async loadModals() {
+		const modalFiles = readdirSync("./components/modals").filter(file => file.endsWith(".js") || file.endsWith(".ts"));
+
+		modalFiles.forEach(async file => {
+			const { default: modal }: { default: Modal } = await import(`../components/modals/${file}`);
+			if (!modal || !modal.data || !modal.execute) return console.error(`[MODALS] Modal '${file}' is malformed`);
+
+			const { data: modalData } = modal;
+			const modalName = modalData.data.custom_id ?? file.split(".")[0].toLowerCase();
+
+			try {
+				modalData.setCustomId(modalName);
+			}
+
+			catch {
+				console.error(`[COMPONENTS] Modal '${file}' has an invalid name`);
+				return;
+			}
+
+			this.components.modals.set(modalName, modal);
+
+			console.log(`[COMPONENTS] Loaded modal handler: ${modalName}`);
+		});
 	}
 
 	private async loadModules() {
