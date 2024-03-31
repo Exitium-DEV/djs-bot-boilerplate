@@ -2,7 +2,7 @@ import { GatewayIntentBits } from "discord.js";
 import { Client, ClientFeatureFlagBits } from "./utilities/Client";
 
 const client = new Client({
-	features: ClientFeatureFlagBits.SENTRY | ClientFeatureFlagBits.REDIS | ClientFeatureFlagBits.MONGO,
+	features: 0,
 	intents: [
 		GatewayIntentBits.Guilds,
 	],
