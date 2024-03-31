@@ -1,6 +1,6 @@
 import { EmbedBuilder, type Interaction } from "discord.js";
-import { Client } from "../utilities/Client";
-import { type Event } from "../types/Event";
+import { Client } from "../../utilities/Client";
+import { type Event } from "../../types/Event";
 
 export default {
 	execute(interaction: Interaction) {
