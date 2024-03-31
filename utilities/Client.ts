@@ -1,6 +1,6 @@
 import {
 	Client as DiscordClient,
-	type ClientOptions, Collection,
+	type ClientOptions, Collection, SlashCommandBuilder, ButtonBuilder,
 } from "discord.js";
 
 import * as Sentry from "@sentry/node";
@@ -8,6 +8,7 @@ import Redis from "./Redis";
 import Mongo from "./Mongo";
 import { readdirSync } from "node:fs";
 import type { Command } from "../types/Command";
+import type { Button } from "../types/Button";
 import { join as pathJoin } from "node:path";
 
 export enum ClientFeatureFlagBits {
@@ -21,7 +22,8 @@ interface Options extends ClientOptions {
 }
 
 export class Client extends DiscordClient {
-	commandData: Collection<string, Command>;
+	commands: Collection<string, Command>;
+	buttons: Collection<string, Button>;
 	sentry?: typeof Sentry;
 	redis?: ReturnType<typeof Redis>;
 	mongo?: ReturnType<typeof Mongo>;
@@ -29,7 +31,8 @@ export class Client extends DiscordClient {
 	constructor(options: Options) {
 		super(options);
 
-		this.commandData = new Collection();
+		this.commands = new Collection();
+		this.buttons = new Collection();
 
 		this.init(options.features).catch(this.handleError);
 	}
@@ -47,6 +50,7 @@ export class Client extends DiscordClient {
 
 		await this.registerEvents();
 		await this.loadCommands();
+		await this.loadButtons();
 
 		if(!this.isReady()) await new Promise(resolve => this.once("ready", resolve));
 
@@ -87,7 +91,7 @@ export class Client extends DiscordClient {
 			const { default: command } = await import(`../commands/${file}`);
 			if (!command || !command.data || !command.execute) return console.error(`[COMMANDS] Command '${file}' is malformed`);
 
-			const { data } = command;
+			const { data }: { data: SlashCommandBuilder } = command;
 			const commandName = file.split(".")[0];
 			
 			try {
@@ -99,10 +103,35 @@ export class Client extends DiscordClient {
 				return;
 			}
 			
-			this.commandData.set(data.name, command);
+			this.commands.set(commandName, command);
 
-			console.log(`[COMMANDS] Loaded handler: ${data.name}`);
+			console.log(`[COMMANDS] Loaded handler: ${commandName}`);
 		});
+	}
+
+	private async loadButtons() {
+		const buttonFiles = readdirSync("./buttons").filter(file => file.endsWith(".js") || file.endsWith(".ts"));
+
+		buttonFiles.forEach(async file => {
+			const { default: button } = await import(`../buttons/${file}`);
+			if (!button || !button.data || !button.execute) return console.error(`[BUTTONS] Button '${file}' is malformed`);
+
+			const { data }: { data: ButtonBuilder } = button;
+			const buttonName = file.split(".")[0];
+
+			try {
+				data.setCustomId(buttonName);
+			}
+
+			catch {
+				console.error(`[BUTTONS] Button '${file}' has an invalid custom ID`);
+				return;
+			}
+
+			this.buttons.set(buttonName, button);
+
+			console.log(`[BUTTONS] Loaded handler: ${buttonName}`);
+		})
 	}
 
 	private async loadModules() {
@@ -118,7 +147,7 @@ export class Client extends DiscordClient {
 	}
 
 	private async deployCommands() {
-		const commandsData = this.commandData
+		const commandsData = this.commands
 			.map(command => command.data)
 			.sort((a, b) => a.name.localeCompare(b.name));
 
