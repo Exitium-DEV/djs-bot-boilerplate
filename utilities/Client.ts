@@ -24,8 +24,10 @@ interface Options extends ClientOptions {
 
 export class Client extends DiscordClient {
 	commands: Collection<string, Command>;
-	buttons: Collection<string, Button>;
-	selectMenus: Collection<string, SelectMenu>;
+	components: {
+		buttons: Collection<string, Button>;
+		selectMenus: Collection<string, SelectMenu>;
+	};
 	sentry?: typeof Sentry;
 	redis?: ReturnType<typeof Redis>;
 	mongo?: ReturnType<typeof Mongo>;
@@ -34,8 +36,10 @@ export class Client extends DiscordClient {
 		super(options);
 
 		this.commands = new Collection();
-		this.buttons = new Collection();
-		this.selectMenus = new Collection();
+		this.components = {
+			buttons: new Collection(),
+			selectMenus: new Collection(),
+		}
 
 		this.init(options.features).catch(this.handleError);
 	}
@@ -132,7 +136,7 @@ export class Client extends DiscordClient {
 				return;
 			}
 
-			this.buttons.set(buttonName, button);
+			this.components.buttons.set(buttonName, button);
 
 			console.log(`[COMPONENTS] Loaded button handler: ${buttonName}`);
 		})
@@ -157,7 +161,7 @@ export class Client extends DiscordClient {
 				return;
 			}
 
-			this.selectMenus.set(selectMenuName, selectMenu);
+			this.components.selectMenus.set(selectMenuName, selectMenu);
 
 			console.log(`[COMPONENTS] Loaded select menu handler: ${selectMenuName}`);
 		})

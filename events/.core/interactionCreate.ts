@@ -40,7 +40,7 @@ function handleButton(interaction: ButtonInteraction) {
 	const client = interaction.client as Client;
 	const { customId } = interaction;
 
-	const button = client.buttons.get(customId);
+	const button = client.components.buttons.get(customId);
 	if (!button) return;
 
 	client.sentry?.addBreadcrumb({
@@ -71,7 +71,7 @@ function handleAnySelectMenu(interaction: AnySelectMenuInteraction) {
 	const client = interaction.client as Client;
 	const { customId } = interaction;
 
-	const selectMenu = client.selectMenus.get(customId);
+	const selectMenu = client.components.selectMenus.get(customId);
 	if (!selectMenu) return;
 
 	client.sentry?.addBreadcrumb({

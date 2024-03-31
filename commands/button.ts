@@ -13,7 +13,7 @@ export default {
 	
 	execute: async (interaction) => {
 		const client = interaction.client as Client;
-		const button = client.buttons.get("example");
+		const button = client.components.buttons.get("example");
 
 		if (!button) {
 			return interaction.reply({

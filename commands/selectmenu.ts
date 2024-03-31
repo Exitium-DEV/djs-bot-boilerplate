@@ -13,7 +13,7 @@ export default {
 	
 	execute: async (interaction) => {
 		const client = interaction.client as Client;
-		const selectMenu = client.selectMenus.get("example");
+		const selectMenu = client.components.selectMenus.get("example");
 
 		if (!selectMenu) {
 			return interaction.reply({
