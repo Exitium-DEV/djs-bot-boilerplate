@@ -8,6 +8,7 @@ import Redis from "./Redis";
 import Mongo from "./Mongo";
 import { readdirSync } from "node:fs";
 import type { Command } from "../types/Command";
+import { join as pathJoin } from "node:path";
 
 export enum ClientFeatureFlagBits {
 	SENTRY = 1 << 0,
@@ -117,7 +118,9 @@ export class Client extends DiscordClient {
 	}
 
 	private async deployCommands() {
-		const commandsData = this.commandData.map(command => command.data);
+		const commandsData = this.commandData
+			.map(command => command.data)
+			.sort((a, b) => a.name.localeCompare(b.name));
 
 		const commandsCacheFile = Bun.file("./commands/.cache");
 		if (!await commandsCacheFile.exists()) await Bun.write(commandsCacheFile, "");
@@ -139,10 +142,12 @@ export class Client extends DiscordClient {
 	}
 
 	private async registerEvents() {
-		const eventFiles = readdirSync("./events").filter(file => file.endsWith(".js") || file.endsWith(".ts"));
+		const coreEventFiles = readdirSync("./events/.core").filter(file => file.endsWith(".js") || file.endsWith(".ts")).map(file => ({file, isCore: true}));
+		const eventFiles = readdirSync("./events").filter(file => file.endsWith(".js") || file.endsWith(".ts")).map(file => ({file, isCore: false}));
 		
-		for (const file of eventFiles) {
-			const { default: event } = await import(`../events/${file}`);
+		for (const eventFile of [...coreEventFiles, ...eventFiles]) {
+			const { file, isCore } = eventFile;
+			const { default: event } = await import(pathJoin("..", "events", isCore ? ".core" : "", file));
 			if (!event || !event.execute) {
 				console.error(`[EVENTS] Event '${file}' is malformed`);
 				continue;
@@ -153,7 +158,7 @@ export class Client extends DiscordClient {
 			if (event.once) this.once(eventName, (...args) => event.execute(...args));
 			else this.on(eventName, (...args) => event.execute(...args));
 
-			console.log(`[EVENTS] Registered event: ${eventName}`);
+			console.log(`[EVENTS] Registered event: ${isCore ? 'core.' : ''}${eventName}`);
 		}
 	}
 }
