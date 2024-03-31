@@ -206,12 +206,12 @@ export class Client extends DiscordClient {
 	}
 
 	private async registerEvents() {
-		const coreEventFiles = readdirSync("./events/.core").filter(file => file.endsWith(".js") || file.endsWith(".ts")).map(file => ({file, isCore: true}));
+		const coreEventFiles = readdirSync("./events/core").filter(file => file.endsWith(".js") || file.endsWith(".ts")).map(file => ({file, isCore: true}));
 		const eventFiles = readdirSync("./events").filter(file => file.endsWith(".js") || file.endsWith(".ts")).map(file => ({file, isCore: false}));
 		
 		for (const eventFile of [...coreEventFiles, ...eventFiles]) {
 			const { file, isCore } = eventFile;
-			const { default: event } = await import(pathJoin("..", "events", isCore ? ".core" : "", file));
+			const { default: event } = await import(pathJoin("..", "events", isCore ? "core" : "", file));
 			if (!event || !event.execute) {
 				console.error(`[EVENTS] Event '${file}' is malformed`);
 				continue;
